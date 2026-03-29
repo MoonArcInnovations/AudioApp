@@ -1,4 +1,6 @@
 # Miscellaneous
+.DS_Store
+.idea/
 *.class
 *.lock
 *.log
@@ -6,6 +8,7 @@
 *.swp
 .buildlog/
 .history
+.agents/
 
 
 
