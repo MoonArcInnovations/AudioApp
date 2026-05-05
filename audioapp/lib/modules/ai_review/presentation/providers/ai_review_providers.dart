@@ -183,6 +183,8 @@ final aiAssistForTestProvider = FutureProvider.family
         suggestionType: recommendation.suggestionType,
         confidence: recommendation.confidence,
         accepted: recommendation.accepted,
+        rationale: recommendation.rationale,
+        warnings: recommendation.warnings,
       );
     });
 

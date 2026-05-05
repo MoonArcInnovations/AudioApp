@@ -358,6 +358,22 @@ class PdfReportService {
         _buildInfoRow('Decision:', decision),
         if (ai.decisionNotes != null && ai.decisionNotes!.isNotEmpty)
           _buildInfoRow('Notes:', ai.decisionNotes!),
+        if (ai.rationale.isNotEmpty) ...[
+          pw.SizedBox(height: 6),
+          pw.Text(
+            'Rationale:',
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          ),
+          ...ai.rationale.take(3).map((item) => pw.Text('- $item')),
+        ],
+        if (ai.warnings.isNotEmpty) ...[
+          pw.SizedBox(height: 6),
+          pw.Text(
+            'Warnings:',
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          ),
+          ...ai.warnings.take(3).map((item) => pw.Text('- $item')),
+        ],
       ],
     );
   }

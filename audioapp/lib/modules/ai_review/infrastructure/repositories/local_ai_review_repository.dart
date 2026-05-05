@@ -62,13 +62,20 @@ class LocalAiReviewRepository implements AiReviewRepository {
     final inference = _ai.analyze(ac: ac, bc: bc);
     final suggestionType = inference['type']?.toString() ?? 'unknown';
     final confidence = (inference['confidence'] as num?)?.toDouble() ?? 0.0;
-    final featuresJson = jsonEncode(inference['features'] ?? {});
+    final modelVersion = inference['modelVersion']?.toString() ?? 'rules-0.2';
+    final featuresJson = jsonEncode({
+      'features': inference['features'] ?? {},
+      'severity': inference['severity'] ?? {},
+      'rationale': inference['rationale'] ?? const <String>[],
+      'warnings': inference['warnings'] ?? const <String>[],
+      'notes': inference['notes'],
+    });
     final id = 'ai_${DateTime.now().millisecondsSinceEpoch}';
 
     final companion = AiRecommendationsCompanion.insert(
       id: id,
       testId: testId,
-      modelVersion: 'stub-0.1',
+      modelVersion: modelVersion,
       suggestionType: suggestionType,
       confidence: confidence,
       featuresJson: featuresJson,

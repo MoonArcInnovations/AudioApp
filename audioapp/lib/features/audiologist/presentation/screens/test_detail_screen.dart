@@ -373,6 +373,36 @@ class _TestDetailScreenState extends ConsumerState<TestDetailScreen> {
                 const SizedBox(height: 8),
                 Text('Suggested Type: $type'),
                 Text('Confidence: ${(confidence * 100).toStringAsFixed(0)}%'),
+                if (assist.rationale.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Rationale',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  ...assist.rationale
+                      .take(3)
+                      .map(
+                        (item) => Text(
+                          '- $item',
+                          style: TextStyle(color: Colors.grey.shade700),
+                        ),
+                      ),
+                ],
+                if (assist.warnings.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Warnings',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  ...assist.warnings
+                      .take(3)
+                      .map(
+                        (item) => Text(
+                          '- $item',
+                          style: const TextStyle(color: AppTheme.warningColor),
+                        ),
+                      ),
+                ],
                 const SizedBox(height: 8),
                 Text(
                   decision == null
