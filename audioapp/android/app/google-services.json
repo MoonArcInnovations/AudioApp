@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "202105485049",
+    "project_id": "audioapp-f72f6",
+    "storage_bucket": "audioapp-f72f6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:202105485049:android:51e11e303cab69f1b9d428",
+        "android_client_info": {
+          "package_name": "com.moonarc.audioapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0OUyV_oaS06WLWmG6adEHWXyrzzICluE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
