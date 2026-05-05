@@ -8,13 +8,20 @@ import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/patient/presentation/screens/patient_home_screen.dart';
 import '../../features/patient/presentation/screens/screening_start_screen.dart';
 import '../../features/patient/presentation/screens/screening_environment_check_screen.dart';
+import '../../features/patient/presentation/screens/screening_headphone_selection_screen.dart';
 import '../../features/patient/presentation/screens/screening_history_screen.dart';
+import '../../features/patient/presentation/screens/screening_results_screen.dart';
+import '../../features/patient/presentation/screens/screening_test_screen.dart';
+import '../../features/audiologist/presentation/screens/ai_audit_log_screen.dart';
+import '../../features/audiologist/presentation/screens/ai_decision_history_screen.dart';
 import '../../features/audiologist/presentation/screens/audiologist_home_screen.dart';
 import '../../features/audiologist/presentation/screens/audiometry_testing_screen.dart';
+import '../../features/audiologist/presentation/screens/bc_import_screen.dart';
 import '../../features/audiologist/presentation/screens/patients_list_screen.dart';
 import '../../features/audiologist/presentation/screens/calibration_screen.dart';
 import '../../features/audiologist/presentation/screens/headphone_calibration_screen.dart';
 import '../../features/audiologist/presentation/screens/bone_conduction_screen.dart';
+import '../../features/audiologist/presentation/screens/test_detail_screen.dart';
 import '../../features/admin/presentation/screens/admin_home_screen.dart';
 import '../../features/admin/presentation/screens/user_management_screen.dart';
 import '../../features/admin/presentation/screens/audiologist_verification_screen.dart';
@@ -59,6 +66,9 @@ class AppRoutes {
       '/audiologist/calibration/headphones';
   static const String audiologistBoneConduction =
       '/audiologist/bone-conduction';
+  static const String audiologistBcImport = '/audiologist/bc-import';
+  static const String audiologistAiHistory = '/audiologist/ai/history';
+  static const String audiologistAiAudit = '/audiologist/ai/audit';
   static const String audiologistSettings = '/audiologist/settings';
 
   // Admin routes
@@ -113,6 +123,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.patientHome,
         builder: (context, state) => const PatientHomeScreen(),
       ),
+      GoRoute(
+        path: AppRoutes.patientHistory,
+        builder: (context, state) => const ScreeningHistoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.patientReport,
+        builder: (context, state) => const ScreeningHistoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.patientProfile,
+        builder: (context, state) => const ProfileScreen(),
+      ),
 
       // Patient screening routes (entry points only - mid-flow screens use Navigator.push with parameters)
       GoRoute(
@@ -122,6 +144,81 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.screeningEnvironment,
         builder: (context, state) => const ScreeningEnvironmentCheckScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.screeningHeadphones,
+        builder: (context, state) {
+          final ambientNoiseDb = _doubleRouteValue(state, 'ambientNoiseDb');
+          if (ambientNoiseDb == null) {
+            return const _RouteContextMissingScreen(
+              title: 'Environment Check Required',
+              message:
+                  'Start from the environment check so ambient noise can be captured before headphone selection.',
+              destination: AppRoutes.screeningEnvironment,
+              actionLabel: 'Run Environment Check',
+            );
+          }
+          return ScreeningHeadphoneSelectionScreen(
+            ambientNoiseDb: ambientNoiseDb,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.screeningTest,
+        builder: (context, state) {
+          final headphoneModel = _stringRouteValue(state, 'headphoneModel');
+          final ambientNoiseDb = _doubleRouteValue(state, 'ambientNoiseDb');
+          if (headphoneModel == null || ambientNoiseDb == null) {
+            return const _RouteContextMissingScreen(
+              title: 'Screening Setup Required',
+              message:
+                  'Select and verify headphones before starting the screening test.',
+              destination: AppRoutes.screeningStart,
+              actionLabel: 'Start Screening Setup',
+            );
+          }
+          return ScreeningTestScreen(
+            headphoneModel: headphoneModel,
+            ambientNoiseDb: ambientNoiseDb,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.screeningResults,
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is! Map<String, Object?>) {
+            return const _RouteContextMissingScreen(
+              title: 'Results Not Available',
+              message:
+                  'Complete a screening test before opening the results screen.',
+              destination: AppRoutes.screeningStart,
+              actionLabel: 'Start Screening',
+            );
+          }
+          final right = extra['rightEarThresholds'];
+          final left = extra['leftEarThresholds'];
+          final headphoneModel = extra['headphoneModel'];
+          final ambientNoiseDb = extra['ambientNoiseDb'];
+          if (right is! Map<String, int> ||
+              left is! Map<String, int> ||
+              headphoneModel is! String ||
+              ambientNoiseDb is! double) {
+            return const _RouteContextMissingScreen(
+              title: 'Results Not Available',
+              message:
+                  'Complete a screening test before opening the results screen.',
+              destination: AppRoutes.screeningStart,
+              actionLabel: 'Start Screening',
+            );
+          }
+          return ScreeningResultsScreen(
+            rightEarThresholds: right,
+            leftEarThresholds: left,
+            headphoneModel: headphoneModel,
+            ambientNoiseDb: ambientNoiseDb,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.screeningHistory,
@@ -159,6 +256,41 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.audiologistBoneConduction,
         builder: (context, state) => const BoneConductionScreen(),
       ),
+      GoRoute(
+        path: AppRoutes.audiologistBcImport,
+        builder: (context, state) => const BcImportScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.audiologistReport,
+        builder: (context, state) {
+          final testId = state.pathParameters['testId'];
+          final patientId =
+              state.uri.queryParameters['patientId'] ??
+              _stringRouteValue(state, 'patientId');
+          if (testId == null || patientId == null) {
+            return const _RouteContextMissingScreen(
+              title: 'Test Context Required',
+              message:
+                  'Open test details from a patient record so the report has patient context.',
+              destination: AppRoutes.audiologistPatients,
+              actionLabel: 'Open Patients',
+            );
+          }
+          return TestDetailScreen(testId: testId, patientId: patientId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.audiologistAiHistory,
+        builder: (context, state) => const AiDecisionHistoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.audiologistAiAudit,
+        builder: (context, state) => const AiAuditLogScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.audiologistSettings,
+        builder: (context, state) => const SettingsScreen(),
+      ),
 
       // Admin routes
       GoRoute(
@@ -172,6 +304,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.adminVerification,
         builder: (context, state) => const AudiologistVerificationScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminAnalytics,
+        builder: (context, state) => const AdminHomeScreen(initialIndex: 2),
+      ),
+      GoRoute(
+        path: AppRoutes.adminAudit,
+        builder: (context, state) => const AiAuditLogScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminSettings,
+        builder: (context, state) => const SettingsScreen(),
       ),
 
       // Common routes
@@ -236,7 +380,9 @@ String? appRedirect({
   }
 
   if (matchedLocation == AppRoutes.pendingApproval) {
-    return authState.isPendingApproval ? null : homeRouteForUser(authState.user);
+    return authState.isPendingApproval
+        ? null
+        : homeRouteForUser(authState.user);
   }
 
   if (accessLevel == RouteAccessLevel.authenticated) {
@@ -248,7 +394,8 @@ String? appRedirect({
     return AppRoutes.login;
   }
 
-  if (authState.isPendingApproval && accessLevel == RouteAccessLevel.audiologist) {
+  if (authState.isPendingApproval &&
+      accessLevel == RouteAccessLevel.audiologist) {
     return AppRoutes.pendingApproval;
   }
 
@@ -256,7 +403,8 @@ String? appRedirect({
     case RouteAccessLevel.patient:
       return user.role == UserRole.patient ? null : homeRouteForUser(user);
     case RouteAccessLevel.audiologist:
-      return user.role == UserRole.audiologist && user.canAccessAssignedWorkspace
+      return user.role == UserRole.audiologist &&
+              user.canAccessAssignedWorkspace
           ? null
           : homeRouteForUser(user);
     case RouteAccessLevel.admin:
@@ -323,3 +471,81 @@ const _sharedAuthenticatedRoutes = <String>{
   AppRoutes.settings,
   AppRoutes.pendingApproval,
 };
+
+String? _stringRouteValue(GoRouterState state, String key) {
+  final extra = state.extra;
+  if (extra is Map<String, Object?> && extra[key] is String) {
+    return extra[key] as String;
+  }
+  return state.uri.queryParameters[key];
+}
+
+double? _doubleRouteValue(GoRouterState state, String key) {
+  final extra = state.extra;
+  if (extra is Map<String, Object?>) {
+    final value = extra[key];
+    if (value is double) {
+      return value;
+    }
+    if (value is int) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value);
+    }
+  }
+  return double.tryParse(state.uri.queryParameters[key] ?? '');
+}
+
+class _RouteContextMissingScreen extends StatelessWidget {
+  const _RouteContextMissingScreen({
+    required this.title,
+    required this.message,
+    required this.destination,
+    required this.actionLabel,
+  });
+
+  final String title;
+  final String message;
+  final String destination;
+  final String actionLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.route_outlined,
+                size: 56,
+                color: AppTheme.infoColor,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => context.go(destination),
+                child: Text(actionLabel),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

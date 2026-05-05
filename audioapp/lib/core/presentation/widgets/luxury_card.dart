@@ -21,9 +21,10 @@ class LuxuryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine card color based on theme if not provided
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor =
-        color ?? Theme.of(context).cardTheme.color ?? AppTheme.surfaceLight;
+        color ?? Theme.of(context).cardTheme.color ?? colorScheme.surface;
 
     return Container(
       margin: margin ?? const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
@@ -32,16 +33,16 @@ class LuxuryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: isDark ? 10 : 20,
+            offset: Offset(0, isDark ? 4 : 10),
             spreadRadius: 0,
           ),
         ],
         border: Border.all(
-          color: AppTheme.secondaryColor.withValues(
-            alpha: 0.1,
-          ), // Subtle gold border
+          color: isDark
+              ? AppTheme.borderDark
+              : AppTheme.secondaryColor.withValues(alpha: 0.1),
           width: 0.5,
         ),
       ),

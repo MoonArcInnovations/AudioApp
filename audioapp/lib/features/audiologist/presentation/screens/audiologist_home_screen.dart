@@ -9,7 +9,9 @@ import 'package:audioapp/modules/clinician_testing/presentation/providers/clinic
 import 'package:audioapp/modules/shared_profile_settings/presentation/screens/profile_screen.dart';
 import 'package:audioapp/core/presentation/widgets/luxury_header.dart';
 import 'package:audioapp/core/presentation/widgets/luxury_card.dart';
+import 'package:audioapp/features/audiologist/presentation/screens/bone_conduction_screen.dart';
 import 'package:audioapp/features/audiologist/presentation/screens/patients_list_screen.dart';
+import 'package:audioapp/modules/clinician_testing/presentation/view_models/clinician_patient_view_model.dart';
 
 class AudiologistHomeScreen extends ConsumerStatefulWidget {
   const AudiologistHomeScreen({super.key});
@@ -83,7 +85,7 @@ class _DashboardTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
-    final patients = ref.watch(clinicianPatientsProvider);
+    final patients = ref.watch(clinicianPatientSummariesProvider);
     final tests = ref.watch(clinicianTestResultsProvider);
 
     final today = DateTime.now();
@@ -107,7 +109,11 @@ class _DashboardTab extends ConsumerWidget {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () {},
+                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No new audiologist notifications'),
+                    ),
+                  ),
                   style: IconButton.styleFrom(
                     backgroundColor: AppTheme.surfaceLight,
                   ),
@@ -202,7 +208,7 @@ class _DashboardTab extends ConsumerWidget {
                         'Bone Conduction',
                         Icons.vibration,
                         AppTheme.secondaryColor,
-                        () => context.push(AppRoutes.audiologistBoneConduction),
+                        () => _showSelectPatientForBcSheet(context, patients),
                       ),
                       _buildActionCard(
                         context,
@@ -280,7 +286,12 @@ class _DashboardTab extends ConsumerWidget {
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     onTap: () {
-                      // Navigate to test details
+                      context.push(
+                        Uri(
+                          path: '/audiologist/report/${test.id}',
+                          queryParameters: {'patientId': test.patientId},
+                        ).toString(),
+                      );
                     },
                   ),
                 );
@@ -344,6 +355,59 @@ class _DashboardTab extends ConsumerWidget {
       ),
     );
   }
+
+  void _showSelectPatientForBcSheet(
+    BuildContext context,
+    List<ClinicianPatientViewModel> patients,
+  ) {
+    if (patients.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add a patient before starting bone conduction.'),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          itemCount: patients.length + 1,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Select Patient for BC Test',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              );
+            }
+            final patient = patients[index - 1];
+            return ListTile(
+              leading: CircleAvatar(child: Text(patient.initials)),
+              title: Text(patient.name),
+              subtitle: Text('Age ${patient.age}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => BoneConductionScreen(patientId: patient.id),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
 class _PatientsTab extends ConsumerWidget {
@@ -362,7 +426,7 @@ class _PatientsTab extends ConsumerWidget {
             actions: [
               IconButton(
                 icon: const Icon(Icons.person_add),
-                onPressed: () => _showAddPatientDialog(context),
+                onPressed: () => context.push(AppRoutes.audiologistPatients),
               ),
             ],
           ),
@@ -432,13 +496,6 @@ class _PatientsTab extends ConsumerWidget {
       ),
     );
   }
-
-  void _showAddPatientDialog(BuildContext context) {
-    // Implementation would go here
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Add Patient Dialog')));
-  }
 }
 
 class _TestsTab extends ConsumerWidget {
@@ -476,6 +533,12 @@ class _TestsTab extends ConsumerWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    onTap: () => context.push(
+                      Uri(
+                        path: '/audiologist/report/${test.id}',
+                        queryParameters: {'patientId': test.patientId},
+                      ).toString(),
+                    ),
                   ),
                 );
               },
@@ -487,11 +550,11 @@ class _TestsTab extends ConsumerWidget {
   }
 }
 
-class _MoreTab extends StatelessWidget {
+class _MoreTab extends ConsumerWidget {
   const _MoreTab();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SafeArea(
       child: Column(
         children: [
@@ -509,7 +572,43 @@ class _MoreTab extends StatelessWidget {
                       ),
                       title: const Text('Settings'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () => context.push(AppRoutes.audiologistSettings),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  LuxuryCard(
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.psychology_outlined,
+                        color: AppTheme.primaryColor,
+                      ),
+                      title: const Text('AI Decision History'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push(AppRoutes.audiologistAiHistory),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  LuxuryCard(
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.history,
+                        color: AppTheme.primaryColor,
+                      ),
+                      title: const Text('AI Audit Log'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push(AppRoutes.audiologistAiAudit),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  LuxuryCard(
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.upload_file,
+                        color: AppTheme.primaryColor,
+                      ),
+                      title: const Text('Import BC Report'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push(AppRoutes.audiologistBcImport),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -535,7 +634,13 @@ class _MoreTab extends StatelessWidget {
                       ),
                       title: const Text('Help & Support'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Help resources are not available offline yet.',
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -549,8 +654,11 @@ class _MoreTab extends StatelessWidget {
                         'Logout',
                         style: TextStyle(color: AppTheme.errorColor),
                       ),
-                      onTap: () {
-                        // Logout logic
+                      onTap: () async {
+                        await ref.read(authStateProvider.notifier).signOut();
+                        if (context.mounted) {
+                          context.go(AppRoutes.login);
+                        }
                       },
                     ),
                   ),

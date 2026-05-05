@@ -18,6 +18,9 @@ class LuxuryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       decoration: BoxDecoration(
@@ -32,13 +35,13 @@ class LuxuryHeader extends StatelessWidget {
                 IconButton(
                   onPressed: () => context.pop(),
                   icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                  color: AppTheme.primaryColor,
+                  color: colorScheme.primary,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppTheme.surfaceLight,
+                    backgroundColor: colorScheme.surface,
                     padding: const EdgeInsets.all(12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: AppTheme.borderLight),
+                      side: BorderSide(color: colorScheme.outline),
                     ),
                   ),
                 ),
@@ -61,8 +64,10 @@ class LuxuryHeader extends StatelessWidget {
               child: Text(
                 subtitle!,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.textSecondaryLight,
-                    ),
+                  color: isDark
+                      ? AppTheme.textSecondaryDark
+                      : AppTheme.textSecondaryLight,
+                ),
               ),
             ),
           ],

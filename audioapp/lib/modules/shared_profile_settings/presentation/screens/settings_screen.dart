@@ -262,7 +262,7 @@ class SettingsScreen extends ConsumerWidget {
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: Colors.grey.shade600,
-          letterSpacing: 0.5,
+          letterSpacing: 0,
         ),
       ),
     );
