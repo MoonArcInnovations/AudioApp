@@ -9,12 +9,18 @@ class AudiogramPoint {
   final int thresholdDb;
   final Ear ear;
   final bool noResponse;
+  final bool masked;
+  final int? maskingLevel;
+  final Ear? maskingEar;
 
   const AudiogramPoint({
     required this.frequency,
     required this.thresholdDb,
     required this.ear,
     this.noResponse = false,
+    this.masked = false,
+    this.maskingLevel,
+    this.maskingEar,
   });
 }
 
@@ -92,16 +98,10 @@ class AudiogramChart extends StatelessWidget {
         Container(
           width: 12,
           height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -113,24 +113,22 @@ class AudiogramChart extends StatelessWidget {
       horizontalInterval: 10,
       verticalInterval: 1,
       getDrawingHorizontalLine: (value) {
-        bool isMainLine = value == 0 || value == 25 || value == 55 || value == 90;
+        bool isMainLine =
+            value == 0 || value == 25 || value == 55 || value == 90;
         return FlLine(
           color: isMainLine ? Colors.grey.shade400 : Colors.grey.shade200,
           strokeWidth: isMainLine ? 1.5 : 0.5,
         );
       },
       getDrawingVerticalLine: (value) {
-        return FlLine(
-          color: Colors.grey.shade200,
-          strokeWidth: 0.5,
-        );
+        return FlLine(color: Colors.grey.shade200, strokeWidth: 0.5);
       },
     );
   }
 
   FlTitlesData _buildTitlesData(BuildContext context) {
     final frequencies = AppConstants.standardFrequencies;
-    
+
     return FlTitlesData(
       leftTitles: AxisTitles(
         axisNameWidget: RotatedBox(
@@ -165,7 +163,9 @@ class AudiogramChart extends StatelessWidget {
           reservedSize: 30,
           getTitlesWidget: (value, meta) {
             final index = value.toInt();
-            if (index < 0 || index >= frequencies.length) return const SizedBox();
+            if (index < 0 || index >= frequencies.length) {
+              return const SizedBox();
+            }
             return Text(
               _formatFrequency(frequencies[index]),
               style: const TextStyle(fontSize: 9),
@@ -211,7 +211,8 @@ class AudiogramChart extends StatelessWidget {
       dotData: FlDotData(
         show: true,
         getDotPainter: (spot, percent, barData, index) {
-          final isHighlighted = highlightedFrequency != null &&
+          final isHighlighted =
+              highlightedFrequency != null &&
               highlightedEar != null &&
               _frequencyToIndex(highlightedFrequency!) == spot.x.toInt() &&
               ((isRightEar && highlightedEar == Ear.right) ||

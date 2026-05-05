@@ -215,6 +215,9 @@ class FirestoreService {
               'frequency': p.frequency,
               'thresholdDb': p.thresholdDb,
               'noResponse': p.noResponse,
+              'masked': p.masked,
+              'maskingLevel': p.maskingLevel,
+              'maskingEar': p.maskingEar?.name,
             },
           )
           .toList(),
@@ -224,6 +227,9 @@ class FirestoreService {
               'frequency': p.frequency,
               'thresholdDb': p.thresholdDb,
               'noResponse': p.noResponse,
+              'masked': p.masked,
+              'maskingLevel': p.maskingLevel,
+              'maskingEar': p.maskingEar?.name,
             },
           )
           .toList(),
@@ -294,6 +300,9 @@ class FirestoreService {
               thresholdDb: p['thresholdDb'] as int,
               ear: Ear.right,
               noResponse: p['noResponse'] as bool? ?? false,
+              masked: p['masked'] as bool? ?? false,
+              maskingLevel: p['maskingLevel'] as int?,
+              maskingEar: _decodeEar(p['maskingEar'] as String?),
             );
           }).toList() ??
           [],
@@ -304,6 +313,9 @@ class FirestoreService {
               thresholdDb: p['thresholdDb'] as int,
               ear: Ear.left,
               noResponse: p['noResponse'] as bool? ?? false,
+              masked: p['masked'] as bool? ?? false,
+              maskingLevel: p['maskingLevel'] as int?,
+              maskingEar: _decodeEar(p['maskingEar'] as String?),
             );
           }).toList() ??
           [],
@@ -316,6 +328,13 @@ class FirestoreService {
       isComplete: data['isComplete'] ?? true,
       synced: true,
     );
+  }
+
+  Ear? _decodeEar(String? value) {
+    if (value == null) {
+      return null;
+    }
+    return Ear.values.where((ear) => ear.name == value).firstOrNull;
   }
 
   // ============ ANALYTICS ============

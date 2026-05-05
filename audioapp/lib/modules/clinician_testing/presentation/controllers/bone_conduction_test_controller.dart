@@ -123,6 +123,9 @@ class BoneConductionNotifier extends StateNotifier<BoneConductionState> {
       frequency: state.currentFrequency,
       thresholdDb: state.currentIntensity,
       ear: state.currentEar,
+      masked: state.isMasking,
+      maskingLevel: state.isMasking ? state.maskingLevel : null,
+      maskingEar: state.isMasking ? _oppositeEar(state.currentEar) : null,
     );
 
     if (state.currentEar == Ear.right) {
@@ -146,6 +149,9 @@ class BoneConductionNotifier extends StateNotifier<BoneConductionState> {
       thresholdDb: state.currentIntensity,
       ear: state.currentEar,
       noResponse: true,
+      masked: state.isMasking,
+      maskingLevel: state.isMasking ? state.maskingLevel : null,
+      maskingEar: state.isMasking ? _oppositeEar(state.currentEar) : null,
     );
 
     if (state.currentEar == Ear.right) {
@@ -186,6 +192,10 @@ class BoneConductionNotifier extends StateNotifier<BoneConductionState> {
 
   void resetTest() {
     state = const BoneConductionState();
+  }
+
+  Ear _oppositeEar(Ear ear) {
+    return ear == Ear.right ? Ear.left : Ear.right;
   }
 
   @override

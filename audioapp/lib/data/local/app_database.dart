@@ -232,6 +232,9 @@ class AppDatabase extends _$AppDatabase {
               'frequency': p.frequency,
               'thresholdDb': p.thresholdDb,
               'noResponse': p.noResponse,
+              'masked': p.masked,
+              'maskingLevel': p.maskingLevel,
+              'maskingEar': p.maskingEar?.name,
             },
           )
           .toList(),
@@ -247,9 +250,19 @@ class AppDatabase extends _$AppDatabase {
             thresholdDb: p['thresholdDb'] as int,
             ear: ear,
             noResponse: p['noResponse'] as bool? ?? false,
+            masked: p['masked'] as bool? ?? false,
+            maskingLevel: p['maskingLevel'] as int?,
+            maskingEar: _decodeEar(p['maskingEar'] as String?),
           ),
         )
         .toList();
+  }
+
+  Ear? _decodeEar(String? value) {
+    if (value == null) {
+      return null;
+    }
+    return Ear.values.where((ear) => ear.name == value).firstOrNull;
   }
 
   ClinicianTestRecord _clinicianTestFromRow(DbTestResult row) {
