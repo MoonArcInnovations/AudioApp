@@ -10,6 +10,7 @@ import '../../../../modules/ai_review/presentation/providers/ai_review_providers
 import '../../../../modules/clinician_testing/presentation/providers/clinician_testing_providers.dart';
 import '../../../../modules/clinician_testing/presentation/view_models/clinician_patient_view_model.dart';
 import '../../../../modules/clinician_testing/presentation/view_models/clinician_test_summary_view_model.dart';
+import 'bone_conduction_screen.dart';
 import 'test_detail_screen.dart';
 
 class PatientsListScreen extends ConsumerStatefulWidget {
@@ -566,6 +567,21 @@ class PatientDetailScreen extends ConsumerWidget {
                     },
                     icon: const Icon(Icons.hearing),
                     label: const Text('New Test'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              BoneConductionScreen(patientId: patient.id),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.vibration),
+                    label: const Text('BC Test'),
                   ),
                 ),
               ],

@@ -8,11 +8,13 @@ import '../../../../shared/widgets/audiogram_chart.dart';
 
 /// Bone conduction testing screen
 class BoneConductionScreen extends ConsumerWidget {
+  final String? patientId;
   final List<AudiogramPoint>? airConductionRight;
   final List<AudiogramPoint>? airConductionLeft;
 
   const BoneConductionScreen({
     super.key,
+    this.patientId,
     this.airConductionRight,
     this.airConductionLeft,
   });
@@ -551,9 +553,7 @@ class BoneConductionScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop(state);
-                    },
+                    onPressed: () => _saveBoneTest(context, ref, state),
                     icon: const Icon(Icons.check),
                     label: const Text('Save Results'),
                   ),
@@ -564,5 +564,47 @@ class BoneConductionScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _saveBoneTest(
+    BuildContext context,
+    WidgetRef ref,
+    BoneConductionState state,
+  ) async {
+    final currentPatientId = patientId;
+    if (currentPatientId == null || currentPatientId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Open bone conduction from a patient before saving.'),
+        ),
+      );
+      return;
+    }
+
+    final saved = await ref
+        .read(clinicianTestResultsProvider.notifier)
+        .saveTest(
+          patientId: currentPatientId,
+          rightEarResults: state.rightEarResults,
+          leftEarResults: state.leftEarResults,
+          testType: 'bone',
+        );
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (saved == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to save bone conduction test.')),
+      );
+      return;
+    }
+
+    ref.read(boneConductionProvider.notifier).resetTest();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Bone conduction test saved.')),
+    );
+    Navigator.of(context).pop();
   }
 }

@@ -451,46 +451,88 @@ class AudiometryTestingScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        final audiologistName =
-                            ref.read(authStateProvider).user?.name ??
-                            'Audiologist';
-                        await ref.read(
-                          previewDraftAudiometryReportUseCaseProvider,
-                        )(
-                          DraftAudiometryReportData(
-                            patientName: patient?.name ?? 'Patient',
-                            patientDob: patient == null
-                                ? 'Unknown'
-                                : '${patient.dateOfBirth.year.toString().padLeft(4, '0')}-${patient.dateOfBirth.month.toString().padLeft(2, '0')}-${patient.dateOfBirth.day.toString().padLeft(2, '0')}',
-                            patientId: patient?.id ?? 'unknown-patient',
-                            audiologistName: audiologistName,
-                            testDate: DateTime.now(),
-                            rightEarResults: state.rightEarResults,
-                            leftEarResults: state.leftEarResults,
-                          ),
-                        );
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error generating report: $e'),
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text('Generate Report'),
+                    onPressed: () => _saveAirTest(context, ref, state, patient),
+                    icon: const Icon(Icons.save),
+                    label: const Text('Save Test'),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final audiologistName =
+                        ref.read(authStateProvider).user?.name ?? 'Audiologist';
+                    await ref.read(previewDraftAudiometryReportUseCaseProvider)(
+                      DraftAudiometryReportData(
+                        patientName: patient?.name ?? 'Patient',
+                        patientDob: patient == null
+                            ? 'Unknown'
+                            : '${patient.dateOfBirth.year.toString().padLeft(4, '0')}-${patient.dateOfBirth.month.toString().padLeft(2, '0')}-${patient.dateOfBirth.day.toString().padLeft(2, '0')}',
+                        patientId: patient?.id ?? 'unknown-patient',
+                        audiologistName: audiologistName,
+                        testDate: DateTime.now(),
+                        rightEarResults: state.rightEarResults,
+                        leftEarResults: state.leftEarResults,
+                      ),
+                    );
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error generating report: $e')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.picture_as_pdf),
+                label: const Text('Generate Report'),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _saveAirTest(
+    BuildContext context,
+    WidgetRef ref,
+    TestingState state,
+    ClinicianPatientViewModel? patient,
+  ) async {
+    if (patient == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a patient before saving a test.')),
+      );
+      return;
+    }
+
+    final saved = await ref
+        .read(clinicianTestResultsProvider.notifier)
+        .saveTest(
+          patientId: patient.id,
+          rightEarResults: state.rightEarResults,
+          leftEarResults: state.leftEarResults,
+          testType: 'air',
+        );
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (saved == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Unable to save test.')));
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Air conduction test saved.')));
   }
 
   Widget _buildPtaCard(
