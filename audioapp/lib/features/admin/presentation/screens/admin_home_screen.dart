@@ -3,20 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioapp/core/router/app_router.dart';
 import 'package:audioapp/core/theme/app_theme.dart';
+import 'package:audioapp/modules/admin/presentation/providers/admin_providers.dart';
+import 'package:audioapp/modules/admin/presentation/view_models/admin_user_view_model.dart';
 import 'package:audioapp/modules/auth/presentation/controllers/auth_controller.dart';
 import 'package:audioapp/modules/shared_profile_settings/presentation/screens/profile_screen.dart';
 import 'package:audioapp/core/presentation/widgets/luxury_header.dart';
 import 'package:audioapp/core/presentation/widgets/luxury_card.dart';
 
 class AdminHomeScreen extends ConsumerStatefulWidget {
-  const AdminHomeScreen({super.key});
+  const AdminHomeScreen({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
 
   @override
   ConsumerState<AdminHomeScreen> createState() => _AdminHomeScreenState();
 }
 
 class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex.clamp(0, 3);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +78,7 @@ class _OverviewTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
+    final usersAsync = ref.watch(adminUserSummariesProvider);
 
     return SafeArea(
       child: CustomScrollView(
@@ -80,7 +91,9 @@ class _OverviewTab extends ConsumerWidget {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () {},
+                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No new admin notifications')),
+                  ),
                   style: IconButton.styleFrom(
                     backgroundColor: AppTheme.surfaceLight,
                   ),
@@ -107,47 +120,15 @@ class _OverviewTab extends ConsumerWidget {
 
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.3,
+            sliver: SliverToBoxAdapter(
+              child: usersAsync.when(
+                loading: () => const _DashboardLoadingGrid(),
+                error: (error, _) => _DashboardError(
+                  message: 'Unable to load user metrics: $error',
+                  onRetry: () => ref.invalidate(adminUserSummariesProvider),
+                ),
+                data: (users) => _buildStatsGrid(context, users),
               ),
-              delegate: SliverChildListDelegate([
-                _buildStatCard(
-                  context,
-                  icon: Icons.people,
-                  value: '156',
-                  label: 'Total Users',
-                  trend: '+12%',
-                  color: AppTheme.primaryColor,
-                ),
-                _buildStatCard(
-                  context,
-                  icon: Icons.hearing,
-                  value: '89',
-                  label: 'Audiologists',
-                  trend: '+5%',
-                  color: AppTheme.successColor,
-                ),
-                _buildStatCard(
-                  context,
-                  icon: Icons.person,
-                  value: '67',
-                  label: 'Patients',
-                  trend: '+18%',
-                  color: AppTheme.tertiaryColor,
-                ),
-                _buildStatCard(
-                  context,
-                  icon: Icons.assessment,
-                  value: '342',
-                  label: 'Tests This Month',
-                  trend: '+23%',
-                  color: AppTheme.warningColor,
-                ),
-              ]),
             ),
           ),
 
@@ -175,6 +156,7 @@ class _OverviewTab extends ConsumerWidget {
                         Icons.person_add,
                         'Add User',
                         AppTheme.primaryColor,
+                        onTap: () => context.push(AppRoutes.adminUsers),
                       ),
                       _buildQuickAction(
                         context,
@@ -188,12 +170,14 @@ class _OverviewTab extends ConsumerWidget {
                         Icons.analytics,
                         'View Reports',
                         AppTheme.tertiaryColor,
+                        onTap: () => context.push(AppRoutes.adminAnalytics),
                       ),
                       _buildQuickAction(
                         context,
                         Icons.settings,
                         'Settings',
                         Colors.grey,
+                        onTap: () => context.push(AppRoutes.adminSettings),
                       ),
                     ],
                   ),
@@ -214,72 +198,139 @@ class _OverviewTab extends ConsumerWidget {
 
           SliverPadding(
             padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final activities = [
-                  (
-                    'New audiologist registered',
-                    'Dr. Sarah Johnson',
-                    '5 min ago',
-                    Icons.person_add,
-                    AppTheme.successColor,
-                  ),
-                  (
-                    'Test completed',
-                    'Patient: John Doe',
-                    '15 min ago',
-                    Icons.hearing,
-                    AppTheme.primaryColor,
-                  ),
-                  (
-                    'User deactivated',
-                    'Michael Brown',
-                    '1 hour ago',
-                    Icons.person_off,
-                    AppTheme.errorColor,
-                  ),
-                  (
-                    'System backup',
-                    'Automatic backup completed',
-                    '2 hours ago',
-                    Icons.backup,
-                    AppTheme.secondaryColor,
-                  ),
-                ];
-                if (index >= activities.length) return null;
-                final activity = activities[index];
-
-                return LuxuryCard(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: activity.$5.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(activity.$4, color: activity.$5, size: 20),
-                    ),
-                    title: Text(
-                      activity.$1,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(activity.$2),
-                    trailing: Text(
-                      activity.$3,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                );
-              }, childCount: 4),
+            sliver: SliverToBoxAdapter(
+              child: usersAsync.when(
+                loading: () => const _RecentActivityLoading(),
+                error: (error, _) => _DashboardError(
+                  message: 'Unable to load recent activity: $error',
+                  onRetry: () => ref.invalidate(adminUserSummariesProvider),
+                ),
+                data: (users) => _buildRecentUsers(context, users),
+              ),
             ),
           ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatsGrid(BuildContext context, List<AdminUserViewModel> users) {
+    final active = users.where((user) => user.isActive != false).length;
+    final suspended = users.where((user) => user.isSuspended == true).length;
+    final audiologists = users
+        .where((user) => user.role.toLowerCase() == 'audiologist')
+        .length;
+    final pending = users
+        .where(
+          (user) =>
+              user.role.toLowerCase() == 'audiologist' &&
+              user.isVerified != true,
+        )
+        .length;
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.3,
+      children: [
+        _buildStatCard(
+          context,
+          icon: Icons.people,
+          value: users.length.toString(),
+          label: 'Total Users',
+          trend: '$active active',
+          color: AppTheme.primaryColor,
+        ),
+        _buildStatCard(
+          context,
+          icon: Icons.hearing,
+          value: audiologists.toString(),
+          label: 'Audiologists',
+          trend: '$pending pending',
+          color: AppTheme.successColor,
+        ),
+        _buildStatCard(
+          context,
+          icon: Icons.verified_user,
+          value: active.toString(),
+          label: 'Active Accounts',
+          trend: '${users.length - active} inactive',
+          color: AppTheme.tertiaryColor,
+        ),
+        _buildStatCard(
+          context,
+          icon: Icons.block,
+          value: suspended.toString(),
+          label: 'Suspended',
+          trend: suspended == 0 ? 'clear' : 'review',
+          color: suspended == 0 ? AppTheme.successColor : AppTheme.errorColor,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentUsers(
+    BuildContext context,
+    List<AdminUserViewModel> users,
+  ) {
+    final recentUsers = [...users]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final visible = recentUsers.take(4).toList();
+
+    if (visible.isEmpty) {
+      return LuxuryCard(
+        child: ListTile(
+          leading: const Icon(
+            Icons.history,
+            color: AppTheme.textSecondaryLight,
+          ),
+          title: const Text('No recent user activity'),
+          subtitle: const Text(
+            'New registrations and account changes appear here.',
+          ),
+          trailing: TextButton(
+            onPressed: () => context.push(AppRoutes.adminUsers),
+            child: const Text('Manage'),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: visible.map((user) {
+        final color = user.isSuspended == true
+            ? AppTheme.errorColor
+            : user.isVerified == true
+            ? AppTheme.successColor
+            : AppTheme.warningColor;
+        return LuxuryCard(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(_roleIcon(user.role), color: color, size: 20),
+            ),
+            title: Text(
+              user.name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text('${_roleLabel(user.role)} • ${user.email}'),
+            trailing: Text(
+              _relativeDate(user.createdAt),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            ),
+            onTap: () => context.push(AppRoutes.adminUsers),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -374,6 +425,8 @@ class _UsersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final usersAsync = ref.watch(adminUserSummariesProvider);
+
     return SafeArea(
       child: Column(
         children: [
@@ -383,7 +436,7 @@ class _UsersTab extends ConsumerWidget {
             actions: [
               IconButton(
                 icon: const Icon(Icons.person_add),
-                onPressed: () => _showAddUserDialog(context),
+                onPressed: () => context.push(AppRoutes.adminUsers),
                 style: IconButton.styleFrom(
                   backgroundColor: AppTheme.surfaceLight,
                 ),
@@ -393,64 +446,61 @@ class _UsersTab extends ConsumerWidget {
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search users...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: AppTheme.surfaceLight,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push(AppRoutes.adminUsers),
+                icon: const Icon(Icons.manage_accounts),
+                label: const Text('Open Full User Management'),
               ),
             ),
           ),
           const SizedBox(height: 16),
 
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 10,
-              itemBuilder: (context, index) {
-                final isAudiologist = index % 3 == 0;
-                return LuxuryCard(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isAudiologist
-                          ? AppTheme.secondaryColor.withValues(alpha: 0.2)
-                          : AppTheme.primaryColor.withValues(alpha: 0.1),
-                      child: Icon(
-                        isAudiologist ? Icons.hearing : Icons.person,
-                        color: isAudiologist
-                            ? AppTheme.primaryColor
-                            : AppTheme.textPrimaryLight,
+            child: usersAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => _DashboardError(
+                message: 'Unable to load users: $error',
+                onRetry: () => ref.invalidate(adminUserSummariesProvider),
+              ),
+              data: (users) {
+                if (users.isEmpty) {
+                  return const _EmptyAdminList(
+                    icon: Icons.people_outline,
+                    title: 'No users yet',
+                    message: 'Create the first account from User Management.',
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: users.length,
+                  itemBuilder: (context, index) {
+                    final user = users[index];
+                    final color = user.isSuspended == true
+                        ? AppTheme.errorColor
+                        : user.role.toLowerCase() == 'audiologist'
+                        ? AppTheme.secondaryColor
+                        : AppTheme.primaryColor;
+                    return LuxuryCard(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: color.withValues(alpha: 0.15),
+                          child: Icon(_roleIcon(user.role), color: color),
+                        ),
+                        title: Text(
+                          user.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          '${_roleLabel(user.role)} • ${user.email}',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push(AppRoutes.adminUsers),
                       ),
-                    ),
-                    title: Text(
-                      'User ${index + 1}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(isAudiologist ? 'Audiologist' : 'Patient'),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) {},
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'view',
-                          child: Text('View Details'),
-                        ),
-                        const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            'Delete',
-                            style: TextStyle(color: AppTheme.errorColor),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -458,10 +508,6 @@ class _UsersTab extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  void _showAddUserDialog(BuildContext context) {
-    // Dialog logic
   }
 }
 
@@ -603,13 +649,174 @@ class _AdminMoreTab extends StatelessWidget {
                     ),
                     title: const Text('Admin Profile'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+                    onTap: () => context.push(AppRoutes.profile),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                LuxuryCard(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.settings_outlined,
+                      color: AppTheme.primaryColor,
+                    ),
+                    title: const Text('Settings'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(AppRoutes.adminSettings),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                LuxuryCard(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.history,
+                      color: AppTheme.primaryColor,
+                    ),
+                    title: const Text('AI Audit Log'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(AppRoutes.adminAudit),
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+IconData _roleIcon(String role) {
+  switch (role.toLowerCase()) {
+    case 'audiologist':
+      return Icons.hearing;
+    case 'superadmin':
+    case 'admin':
+      return Icons.admin_panel_settings;
+    case 'patient':
+      return Icons.person;
+    default:
+      return Icons.account_circle;
+  }
+}
+
+String _roleLabel(String role) {
+  switch (role.toLowerCase()) {
+    case 'audiologist':
+      return 'Audiologist';
+    case 'superadmin':
+      return 'Super Admin';
+    case 'admin':
+      return 'Admin';
+    case 'patient':
+      return 'Patient';
+    default:
+      return role;
+  }
+}
+
+String _relativeDate(DateTime value) {
+  final difference = DateTime.now().difference(value);
+  if (difference.inMinutes < 1) {
+    return 'Just now';
+  }
+  if (difference.inHours < 1) {
+    return '${difference.inMinutes}m ago';
+  }
+  if (difference.inDays < 1) {
+    return '${difference.inHours}h ago';
+  }
+  if (difference.inDays < 30) {
+    return '${difference.inDays}d ago';
+  }
+  return '${value.month}/${value.day}/${value.year}';
+}
+
+class _DashboardLoadingGrid extends StatelessWidget {
+  const _DashboardLoadingGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.3,
+      children: List.generate(
+        4,
+        (_) =>
+            const LuxuryCard(child: Center(child: CircularProgressIndicator())),
+      ),
+    );
+  }
+}
+
+class _RecentActivityLoading extends StatelessWidget {
+  const _RecentActivityLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const LuxuryCard(child: Center(child: CircularProgressIndicator()));
+  }
+}
+
+class _DashboardError extends StatelessWidget {
+  const _DashboardError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return LuxuryCard(
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline, color: AppTheme.errorColor),
+          const SizedBox(height: 8),
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyAdminList extends StatelessWidget {
+  const _EmptyAdminList({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 56, color: AppTheme.textSecondaryLight),
+            const SizedBox(height: 12),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

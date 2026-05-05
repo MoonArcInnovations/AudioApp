@@ -21,7 +21,15 @@ class BoneConductionScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentPatientId = patientId;
+    if (currentPatientId == null || currentPatientId.isEmpty) {
+      return const _BoneConductionPatientPicker();
+    }
+
     final bcState = ref.watch(boneConductionProvider);
+    final patient = ref.watch(
+      clinicianPatientSummaryProvider(currentPatientId),
+    );
 
     if (bcState.testComplete) {
       return _buildResultsView(context, ref, bcState);
@@ -29,7 +37,9 @@ class BoneConductionScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bone Conduction Test'),
+        title: Text(
+          patient == null ? 'Bone Conduction Test' : 'BC: ${patient.name}',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -606,5 +616,68 @@ class BoneConductionScreen extends ConsumerWidget {
       const SnackBar(content: Text('Bone conduction test saved.')),
     );
     Navigator.of(context).pop();
+  }
+}
+
+class _BoneConductionPatientPicker extends ConsumerWidget {
+  const _BoneConductionPatientPicker();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final patients = ref.watch(clinicianPatientSummariesProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Select Patient')),
+      body: patients.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.people_outline,
+                      size: 56,
+                      color: AppTheme.textSecondaryLight,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No patients available',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Add a patient before starting bone conduction testing.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: patients.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final patient = patients[index];
+                return Card(
+                  child: ListTile(
+                    leading: CircleAvatar(child: Text(patient.initials)),
+                    title: Text(patient.name),
+                    subtitle: Text('Age ${patient.age}'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              BoneConductionScreen(patientId: patient.id),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+    );
   }
 }

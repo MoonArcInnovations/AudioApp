@@ -11,7 +11,6 @@ import '../../../../modules/clinician_testing/presentation/providers/clinician_t
 import '../../../../modules/clinician_testing/presentation/view_models/clinician_patient_view_model.dart';
 import '../../../../modules/clinician_testing/presentation/view_models/clinician_test_summary_view_model.dart';
 import 'bone_conduction_screen.dart';
-import 'test_detail_screen.dart';
 
 class PatientsListScreen extends ConsumerStatefulWidget {
   const PatientsListScreen({super.key});
@@ -22,6 +21,7 @@ class PatientsListScreen extends ConsumerStatefulWidget {
 
 class _PatientsListScreenState extends ConsumerState<PatientsListScreen> {
   String _searchQuery = '';
+  _PatientSortMode _sortMode = _PatientSortMode.nameAsc;
   final _searchController = TextEditingController();
 
   @override
@@ -33,13 +33,26 @@ class _PatientsListScreenState extends ConsumerState<PatientsListScreen> {
   List<ClinicianPatientViewModel> _filterPatients(
     List<ClinicianPatientViewModel> patients,
   ) {
-    if (_searchQuery.isEmpty) return patients;
     final query = _searchQuery.toLowerCase();
-    return patients.where((p) {
-      return p.name.toLowerCase().contains(query) ||
-          (p.email?.toLowerCase().contains(query) ?? false) ||
-          (p.phoneNumber?.contains(query) ?? false);
-    }).toList();
+    final filtered = _searchQuery.isEmpty
+        ? [...patients]
+        : patients.where((p) {
+            return p.name.toLowerCase().contains(query) ||
+                (p.email?.toLowerCase().contains(query) ?? false) ||
+                (p.phoneNumber?.contains(query) ?? false);
+          }).toList();
+
+    switch (_sortMode) {
+      case _PatientSortMode.nameAsc:
+        filtered.sort((a, b) => a.name.compareTo(b.name));
+      case _PatientSortMode.nameDesc:
+        filtered.sort((a, b) => b.name.compareTo(a.name));
+      case _PatientSortMode.newest:
+        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      case _PatientSortMode.oldest:
+        filtered.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    }
+    return filtered;
   }
 
   @override
@@ -51,11 +64,29 @@ class _PatientsListScreenState extends ConsumerState<PatientsListScreen> {
       appBar: AppBar(
         title: const Text('Patients'),
         actions: [
-          IconButton(
+          PopupMenuButton<_PatientSortMode>(
             icon: const Icon(Icons.sort),
-            onPressed: () {
-              // TODO: Add sorting options
-            },
+            tooltip: 'Sort patients',
+            initialValue: _sortMode,
+            onSelected: (value) => setState(() => _sortMode = value),
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _PatientSortMode.nameAsc,
+                child: Text('Name A-Z'),
+              ),
+              PopupMenuItem(
+                value: _PatientSortMode.nameDesc,
+                child: Text('Name Z-A'),
+              ),
+              PopupMenuItem(
+                value: _PatientSortMode.newest,
+                child: Text('Newest first'),
+              ),
+              PopupMenuItem(
+                value: _PatientSortMode.oldest,
+                child: Text('Oldest first'),
+              ),
+            ],
           ),
         ],
       ),
@@ -269,6 +300,8 @@ class _PatientsListScreenState extends ConsumerState<PatientsListScreen> {
     );
   }
 }
+
+enum _PatientSortMode { nameAsc, nameDesc, newest, oldest }
 
 /// Add patient bottom sheet
 class AddPatientSheet extends ConsumerStatefulWidget {
@@ -794,11 +827,11 @@ class PatientDetailScreen extends ConsumerWidget {
           ),
         ),
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) =>
-                  TestDetailScreen(testId: test.id, patientId: test.patientId),
-            ),
+          context.push(
+            Uri(
+              path: '/audiologist/report/${test.id}',
+              queryParameters: {'patientId': test.patientId},
+            ).toString(),
           );
         },
       ),

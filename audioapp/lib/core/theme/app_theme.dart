@@ -74,7 +74,7 @@ class AppTheme {
         fontSize: 22,
         fontWeight: FontWeight.w700,
         color: textPrimaryLight,
-        letterSpacing: 0.5,
+        letterSpacing: 0,
       ),
     ),
 
@@ -98,7 +98,7 @@ class AppTheme {
         textStyle: GoogleFonts.lato(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
+          letterSpacing: 0,
         ),
       ),
     ),
@@ -113,7 +113,7 @@ class AppTheme {
         textStyle: GoogleFonts.lato(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
+          letterSpacing: 0,
         ),
       ),
     ),
@@ -124,7 +124,7 @@ class AppTheme {
         textStyle: GoogleFonts.lato(
           fontSize: 14,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
+          letterSpacing: 0,
         ),
       ),
     ),
@@ -211,7 +211,7 @@ class AppTheme {
         fontSize: 22,
         fontWeight: FontWeight.w700,
         color: textPrimaryDark,
-        letterSpacing: 0.5,
+        letterSpacing: 0,
       ),
     ),
 
@@ -234,7 +234,7 @@ class AppTheme {
         textStyle: GoogleFonts.lato(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
+          letterSpacing: 0,
         ),
       ),
     ),
@@ -291,13 +291,13 @@ class AppTheme {
         fontSize: 32,
         fontWeight: FontWeight.bold,
         color: primary,
-        letterSpacing: -0.5,
+        letterSpacing: 0,
       ),
       displayMedium: GoogleFonts.playfairDisplay(
         fontSize: 28,
         fontWeight: FontWeight.bold,
         color: primary,
-        letterSpacing: -0.5,
+        letterSpacing: 0,
       ),
       displaySmall: GoogleFonts.playfairDisplay(
         fontSize: 24,
@@ -342,7 +342,7 @@ class AppTheme {
         fontSize: 14,
         fontWeight: FontWeight.bold,
         color: primary,
-        letterSpacing: 0.5, // Caps or buttons usually need spacing
+        letterSpacing: 0,
       ),
     );
   }
